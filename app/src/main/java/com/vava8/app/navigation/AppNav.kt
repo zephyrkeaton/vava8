@@ -49,6 +49,7 @@ import com.vava8.app.ui.discover.DiscoverViewModel
 import com.vava8.app.ui.history.BrowseHistoryScreen
 import com.vava8.app.ui.home.HomeScreen
 import com.vava8.app.ui.home.HomeViewModel
+import com.vava8.app.ui.profile.AboutAppScreen
 import com.vava8.app.ui.profile.PersonalCenterUrls
 import com.vava8.app.ui.profile.ProfileScreen
 import com.vava8.app.ui.profile.WebInfoScreen
@@ -85,6 +86,7 @@ sealed class Dest(val route: String) {
             return "webinfo/$t/$u"
         }
     }
+    data object AboutApp : Dest("about_app")
     data object BrowseHistory : Dest("browse_history")
 }
 
@@ -317,6 +319,7 @@ fun AppNavHost(
                     onOpenWebInfo = { title, url ->
                         navController.navigate(Dest.WebInfo.of(title, url))
                     },
+                    onOpenAboutApp = { navController.navigate(Dest.AboutApp.route) },
                     onOpenBrowseHistory = {
                         navController.navigate(Dest.BrowseHistory.route)
                     },
@@ -332,6 +335,9 @@ fun AppNavHost(
                 onBack = { navController.popBackStack() },
                 onOpenPost = { navController.navigate(Dest.Article.of(it)) }
             )
+        }
+        composable(Dest.AboutApp.route) {
+            AboutAppScreen(onBack = { navController.popBackStack() })
         }
         composable(Dest.BrowseHistory.route) {
             BrowseHistoryScreen(

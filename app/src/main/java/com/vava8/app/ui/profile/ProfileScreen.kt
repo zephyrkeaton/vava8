@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.ImageNotSupported
+import androidx.compose.material.icons.outlined.Android
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.NotificationsNone
@@ -80,6 +81,7 @@ fun ProfileScreen(
     onLogin: () -> Unit,
     onRegister: () -> Unit,
     onOpenWebInfo: (String, String) -> Unit,
+    onOpenAboutApp: () -> Unit,
     onOpenBrowseHistory: () -> Unit,
     onFontSizeChange: (ReadingFontSize) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
@@ -308,6 +310,10 @@ fun ProfileScreen(
                 HorizontalDivider()
                 SettingRow(Icons.Outlined.Info, "关于我们") {
                     onOpenWebInfo("关于我们", "https://www.vava8.com/index.php?app=index&act=page&id=3")
+                }
+                HorizontalDivider()
+                SettingRow(Icons.Outlined.Android, "关于此 App") {
+                    onOpenAboutApp()
                 }
                 HorizontalDivider()
                 SettingRow(Icons.Outlined.Policy, "隐私政策") {
