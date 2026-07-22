@@ -55,13 +55,12 @@ fun TabSwipeContainer(
     val progress = (abs(offsetX) / (screenWidthPx * 0.45f)).coerceIn(0f, 1f)
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // 跟手滑出时用页面底色垫底，避免露出空白/遮罩闪一下
         if (progress > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        MaterialTheme.colorScheme.scrim.copy(alpha = 0.22f * progress)
-                    )
+                    .background(MaterialTheme.colorScheme.background)
             )
         }
 
@@ -121,8 +120,9 @@ fun TabSwipeContainer(
                                                             ) { offsetX = value }
                                                             com.vava8.app.navigation.TabTransitionState
                                                                 .suppressNextExit = true
+                                                            com.vava8.app.navigation.TabTransitionState
+                                                                .suppressNextEnter = true
                                                             onSwipeLeft?.invoke()
-                                                            offsetX = 0f
                                                         }
                                                     }
                                                     goPrev -> {
@@ -134,8 +134,9 @@ fun TabSwipeContainer(
                                                             ) { offsetX = value }
                                                             com.vava8.app.navigation.TabTransitionState
                                                                 .suppressNextExit = true
+                                                            com.vava8.app.navigation.TabTransitionState
+                                                                .suppressNextEnter = true
                                                             onSwipeRight?.invoke()
-                                                            offsetX = 0f
                                                         }
                                                     }
                                                     else -> {

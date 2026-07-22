@@ -105,10 +105,13 @@ private val tabs = listOf(
     TabItem(Dest.Profile, "我的", Icons.Filled.Person, Icons.Outlined.PersonOutline)
 )
 
-/** 手势已把当前页滑出时，跳过 NavHost 退出动画，避免闪回。 */
+/** 手势已把当前页滑出时，跳过 NavHost 进出场动画，避免空白闪页。 */
 internal object TabTransitionState {
     @Volatile
     var suppressNextExit: Boolean = false
+
+    @Volatile
+    var suppressNextEnter: Boolean = false
 }
 
 private fun tabIndex(route: String?): Int = when {
@@ -120,6 +123,10 @@ private fun tabIndex(route: String?): Int = when {
 }
 
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.tabEnter(): EnterTransition {
+    if (TabTransitionState.suppressNextEnter) {
+        TabTransitionState.suppressNextEnter = false
+        return EnterTransition.None
+    }
     val from = tabIndex(initialState.destination.route)
     val to = tabIndex(targetState.destination.route)
     if (from < 0 || to < 0) {
@@ -350,13 +357,15 @@ fun AppNavHost(
             )
         }
         composable(Dest.Channels.route) {
-            ChannelsScreen(
-                onBack = { navController.popBackStack() },
-                onOpenChannel = { id, name ->
-                    // 保留「全部频道」在返回栈中，板块列表返回时回到全部频道
-                    navController.navigate(Dest.ChannelFeed.of(id, name))
-                }
-            )
+            SwipeBackContainer(onBack = { navController.popBackStack() }) {
+                ChannelsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenChannel = { id, name ->
+                        // 保留「全部频道」在返回栈中，板块列表返回时回到全部频道
+                        navController.navigate(Dest.ChannelFeed.of(id, name))
+                    }
+                )
+            }
         }
         composable(Dest.Login.route) {
             LoginScreen(

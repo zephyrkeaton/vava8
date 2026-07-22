@@ -58,13 +58,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -85,6 +85,7 @@ import com.vava8.app.ui.theme.LocalReaderPrefs
 import com.vava8.app.ui.theme.ReadingFontSize
 import com.vava8.app.ui.theme.ThemeMode
 import com.vava8.app.util.TimeUtils
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -112,21 +113,40 @@ fun ArticleDetailScreen(
     var commentText by remember { mutableStateOf("") }
     var commentFocused by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
+    // 粘性显示：一旦触底就保持，避免回复框出现后压缩列表高度导致 atBottom 抖动
+    var replyLatched by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val listState = rememberLazyListState()
-    val atBottom by remember {
-        derivedStateOf {
-            val info = listState.layoutInfo
+
+    LaunchedEffect(listState) {
+        var lastIndex = listState.firstVisibleItemIndex
+        var lastOffset = listState.firstVisibleItemScrollOffset
+        snapshotFlow {
+            Triple(
+                listState.firstVisibleItemIndex,
+                listState.firstVisibleItemScrollOffset,
+                listState.layoutInfo
+            )
+        }.collect { (index, offset, info) ->
             val total = info.totalItemsCount
-            if (total == 0) return@derivedStateOf false
-            val last = info.visibleItemsInfo.lastOrNull() ?: return@derivedStateOf false
-            // 最后一项已进入视口底部附近，视为滑到最下方
-            last.index >= total - 1 &&
-                last.offset + last.size <= info.viewportEndOffset + last.size / 2
+            val lastVisible = info.visibleItemsInfo.lastOrNull()
+            val nearBottom = total > 0 && lastVisible != null && lastVisible.index >= total - 1
+            val scrollingUp = index < lastIndex ||
+                (index == lastIndex && offset < lastOffset)
+
+            when {
+                nearBottom -> replyLatched = true
+                // 仅在用户主动上滑离开底部时收起，忽略因回复框出现导致的布局回弹
+                scrollingUp && lastVisible != null && lastVisible.index < total - 1 -> {
+                    replyLatched = false
+                }
+            }
+            lastIndex = index
+            lastOffset = offset
         }
     }
-    // 划到底才显示；输入中/有焦点时保持显示，避免键盘弹出后输入框消失
-    val showReplyBox = atBottom || commentFocused || commentText.isNotBlank()
+
+    val showReplyBox = replyLatched || commentFocused || commentText.isNotBlank()
 
     fun reload() {
         scope.launch {
