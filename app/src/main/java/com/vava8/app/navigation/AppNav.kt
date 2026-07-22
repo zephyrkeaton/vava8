@@ -41,6 +41,7 @@ import com.vava8.app.Vava8App
 import com.vava8.app.ui.auth.LoginScreen
 import com.vava8.app.ui.auth.RegisterScreen
 import com.vava8.app.ui.channels.ChannelsScreen
+import com.vava8.app.ui.components.SwipeBackContainer
 import com.vava8.app.ui.components.TabSwipeContainer
 import com.vava8.app.ui.create.CreateScreen
 import com.vava8.app.ui.detail.ArticleDetailScreen
@@ -262,21 +263,24 @@ fun AppNavHost(
                 key = "channel-$id",
                 factory = HomeViewModel.factory(repo, id, name)
             )
-            HomeScreen(
-                viewModel = vm,
-                onOpenPost = { navController.navigate(Dest.Article.of(it)) },
-                onSearch = { navController.navigate(Dest.Search.route) },
-                onOpenFavorites = {
-                    if (!repo.user.value.isLoggedIn) {
-                        navController.navigate(Dest.Login.route)
-                    } else {
-                        navController.navigate(
-                            Dest.WebInfo.of("我的收藏", PersonalCenterUrls.MY_FAVORITES)
-                        )
-                    }
-                },
-                bottomBar = bar
-            )
+            SwipeBackContainer(onBack = { navController.popBackStack() }) {
+                HomeScreen(
+                    viewModel = vm,
+                    onOpenPost = { navController.navigate(Dest.Article.of(it)) },
+                    onSearch = { navController.navigate(Dest.Search.route) },
+                    onOpenFavorites = {
+                        if (!repo.user.value.isLoggedIn) {
+                            navController.navigate(Dest.Login.route)
+                        } else {
+                            navController.navigate(
+                                Dest.WebInfo.of("我的收藏", PersonalCenterUrls.MY_FAVORITES)
+                            )
+                        }
+                    },
+                    onBack = { navController.popBackStack() },
+                    bottomBar = bar
+                )
+            }
         }
         composable(Dest.Discover.route) {
             TabSwipeContainer(
@@ -349,9 +353,8 @@ fun AppNavHost(
             ChannelsScreen(
                 onBack = { navController.popBackStack() },
                 onOpenChannel = { id, name ->
-                    navController.navigate(Dest.ChannelFeed.of(id, name)) {
-                        popUpTo(Dest.Discover.route)
-                    }
+                    // 保留「全部频道」在返回栈中，板块列表返回时回到全部频道
+                    navController.navigate(Dest.ChannelFeed.of(id, name))
                 }
             )
         }

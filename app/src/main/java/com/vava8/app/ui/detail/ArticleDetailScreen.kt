@@ -4,6 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -52,6 +58,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -102,8 +110,23 @@ fun ArticleDetailScreen(
     var likeCount by remember { mutableIntStateOf(0) }
     var favorited by remember { mutableStateOf(false) }
     var commentText by remember { mutableStateOf("") }
+    var commentFocused by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
+    val listState = rememberLazyListState()
+    val atBottom by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val total = info.totalItemsCount
+            if (total == 0) return@derivedStateOf false
+            val last = info.visibleItemsInfo.lastOrNull() ?: return@derivedStateOf false
+            // 最后一项已进入视口底部附近，视为滑到最下方
+            last.index >= total - 1 &&
+                last.offset + last.size <= info.viewportEndOffset + last.size / 2
+        }
+    }
+    // 划到底才显示；输入中/有焦点时保持显示，避免键盘弹出后输入框消失
+    val showReplyBox = atBottom || commentFocused || commentText.isNotBlank()
 
     fun reload() {
         scope.launch {
@@ -161,37 +184,45 @@ fun ArticleDetailScreen(
                     .navigationBarsPadding()
             ) {
                 HorizontalDivider()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                AnimatedVisibility(
+                    visible = showReplyBox,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
                 ) {
-                    OutlinedTextField(
-                        value = commentText,
-                        onValueChange = { commentText = it },
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("写下你的看法...") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(onClick = {
-                        if (!repo.user.value.isLoggedIn) {
-                            onLoginRequired(); return@TextButton
-                        }
-                        if (commentText.isBlank()) return@TextButton
-                        scope.launch {
-                            val res = repo.comment(articleId, commentText.trim())
-                            if (res.ok == 1) {
-                                commentText = ""
-                                snackbar.showSnackbar("评论成功")
-                                reload()
-                            } else {
-                                snackbar.showSnackbar(res.error ?: "评论失败")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = commentText,
+                            onValueChange = { commentText = it },
+                            modifier = Modifier
+                                .weight(1f)
+                                .onFocusChanged { commentFocused = it.isFocused },
+                            placeholder = { Text("写下你的看法...") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(onClick = {
+                            if (!repo.user.value.isLoggedIn) {
+                                onLoginRequired(); return@TextButton
                             }
-                        }
-                    }) { Text("发送") }
+                            if (commentText.isBlank()) return@TextButton
+                            scope.launch {
+                                val res = repo.comment(articleId, commentText.trim())
+                                if (res.ok == 1) {
+                                    commentText = ""
+                                    snackbar.showSnackbar("评论成功")
+                                    reload()
+                                } else {
+                                    snackbar.showSnackbar(res.error ?: "评论失败")
+                                }
+                            }
+                        }) { Text("发送") }
+                    }
                 }
                 Row(
                     modifier = Modifier
@@ -270,6 +301,7 @@ fun ArticleDetailScreen(
                 ) { Text("内容不存在") }
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)

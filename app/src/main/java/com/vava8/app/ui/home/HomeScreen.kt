@@ -28,6 +28,7 @@ import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.ImageNotSupported
@@ -70,6 +71,7 @@ fun HomeScreen(
     onOpenPost: (Long) -> Unit,
     onSearch: () -> Unit,
     onOpenFavorites: () -> Unit = {},
+    onBack: (() -> Unit)? = null,
     bottomBar: @Composable () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -110,7 +112,7 @@ fun HomeScreen(
                         Vava8App.instance.preferences.setNoImageMode(showImages)
                     }
                 },
-                onClearChannel = if (state.channelId > 0) viewModel::clearChannel else null
+                onBack = onBack ?: if (state.channelId > 0) viewModel::clearChannel else null
             )
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 12.dp),
@@ -220,7 +222,7 @@ private fun HomeTopBar(
     onSearch: () -> Unit,
     onOpenFavorites: () -> Unit,
     onToggleImages: () -> Unit,
-    onClearChannel: (() -> Unit)?
+    onBack: (() -> Unit)?
 ) {
     Column(
         modifier = Modifier
@@ -239,6 +241,15 @@ private fun HomeTopBar(
                     .fillMaxWidth()
                     .padding(bottom = 10.dp)
             ) {
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回",
+                            tint = BrandBlue
+                        )
+                    }
+                }
                 Text(
                     text = "Vava8",
                     fontSize = 22.sp,
@@ -252,9 +263,6 @@ private fun HomeTopBar(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                if (onClearChannel != null) {
-                    TextButton(onClick = onClearChannel) { Text("全部") }
-                }
                 IconButton(onClick = onOpenFavorites) {
                     Icon(
                         imageVector = Icons.Outlined.BookmarkBorder,
