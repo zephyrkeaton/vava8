@@ -8,8 +8,8 @@
 
 最新安装包在 [GitHub Releases](https://github.com/zephyrkeaton/vava8/releases) 提供：
 
-- **当前版本 1.0.2**：[Vava8-1.0.2.apk](https://github.com/zephyrkeaton/vava8/releases/download/v1.0.2/Vava8-1.0.2.apk)
-- 发布页：https://github.com/zephyrkeaton/vava8/releases/tag/v1.0.2
+- **当前版本 1.0.3**：[Vava8-1.0.3.apk](https://github.com/zephyrkeaton/vava8/releases/download/v1.0.3/Vava8-1.0.3.apk)
+- 发布页：https://github.com/zephyrkeaton/vava8/releases/tag/v1.0.3
 
 下载后在手机上允许「未知来源」安装即可。
 
